@@ -1,0 +1,42 @@
+\begin{tikzpicture}[
+  every node/.style={font=\footnotesize},
+  sbox/.style={src, text width=2.15cm, minimum height=1.0cm},
+  pbox/.style={proc, text width=2.75cm, minimum height=1.0cm},
+  kbox/.style={proc, text width=3.15cm, minimum height=0.95cm}
+]
+% ---- Lanes: source -> cleaning -> aggregation ---------------------
+\foreach \y/\s/\a/\b/\n in {
+   0.0/{\textbf{STATS19}\\collisions}/{Police forces 1 \& 48; drop invalid coordinates and times; deduplicate}/{Map to H3 cell and 3-h window; label $y_{i,t}$}/L1,
+  -1.45/{\textbf{Open-Meteo}\\hourly grid}/{Range and unit checks; nearest grid point per cell}/{Aggregate per window (sum, mean, max)}/L2,
+  -2.90/{\textbf{DfT AADF}\\count points}/{Spatial join to cells; flag estimated counts}/{Vehicle-km $\times$ TRA0307 profile (Eq.~7)}/L3,
+  -4.35/{\textbf{OSM}\\network \& POI}/{Clip to London; simplify graph (OSMnx)}/{Static per-cell aggregates}/L4,
+  -5.80/{\textbf{Calendar}\\\& sun position}/{Bank holidays; COVID-19 restriction periods}/{Cyclical encodings; darkness flag}/L5}
+{
+  \node[sbox] (\n s) at (1.15,\y) {\s};
+  \node[pbox] (\n a) at (4.05,\y) {\a};
+  \node[pbox] (\n b) at (7.25,\y) {\b};
+  \draw[arr] (\n s) -- (\n a);
+  \draw[arr] (\n a) -- (\n b);
+}
+
+% ---- Join node spanning all lanes --------------------------------
+\node[draw=black!70, rounded corners=2pt, fill=yellow!15, minimum width=1.0cm,
+      fit={(9.25,0.55) (9.25,-6.35)}, inner sep=0pt] (join) {};
+\node[rotate=90, font=\footnotesize\bfseries] at (join.center) {Join on key $(i,t)$};
+\foreach \n in {L1,L2,L3,L4,L5}{
+  \draw[arr] (\n b.east) -- (\n b.east -| join.west);
+}
+
+% ---- Post-join chain ---------------------------------------------
+\node[kbox] (k1) at (12.55,0.05) {History and spatial-lag features (past data only)};
+\node[kbox] (k2) at (12.55,-1.40) {Chronological split\\(train / validation / test)};
+\node[kbox] (k3) at (12.55,-2.85) {Negative subsampling, rate $\beta$ (training set only)};
+\node[kbox] (k4) at (12.55,-4.30) {Encoding and z-score (LR, MLP; fitted on training)};
+\node[resbox, text width=3.15cm, minimum height=0.95cm] (k5) at (12.55,-5.75) {Model-ready tables (Parquet)};
+
+\draw[arr] (join.east |- k1.west) -- (k1.west);
+\draw[arr] (k1) -- (k2);
+\draw[arr] (k2) -- (k3);
+\draw[arr] (k3) -- (k4);
+\draw[arr] (k4) -- (k5);
+\end{tikzpicture}
