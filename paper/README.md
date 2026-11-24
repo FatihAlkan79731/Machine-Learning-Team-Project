@@ -10,6 +10,8 @@ LaTeX source of the project paper.
 | `figures/*.tex` | TikZ diagrams (architecture, preprocessing, model framework, training workflow) |
 | `references.bib` | Bibliography (BibTeX) |
 
+**Overleaf project (read-only):** https://www.overleaf.com/project/6b060c04e2ca21afb91b3d88/share#e13afaa6995383fe55032fde3958ebc94222bf5a139b3d31
+
 ## Compile locally
 
 ```bash
