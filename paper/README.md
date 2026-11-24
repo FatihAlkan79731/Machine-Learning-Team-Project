@@ -19,8 +19,8 @@ latexmk -pdf main.tex
 
 ## Use with Overleaf
 
-**Option 1 — upload:** compress the contents of this folder into a `.zip` file, then in Overleaf
-choose *New Project → Upload Project*. Overleaf compiles it with pdfLaTeX and BibTeX
+**Option 1 — upload:** use [`Urban_Accident_Risk_Overleaf.zip`](Urban_Accident_Risk_Overleaf.zip) (or compress
+the contents of this folder yourself), then in Overleaf choose *New Project → Upload Project*. Overleaf compiles it with pdfLaTeX and BibTeX
 automatically.
 
 **Option 2 — GitHub sync (Overleaf premium):** *Menu → GitHub* links an Overleaf project to a
