@@ -1,0 +1,573 @@
+\section{Proposed Solution}
+\label{sec:proposed}
+
+% ===============================================================
+\subsection{Introduction and Overview of the Proposed Solution}
+\label{sec:overview}
+
+\paragraph{Problem.}
+Police-reported injury collisions in Greater London have remained above 22,000 per year in recent years \cite{tfl2024casualties}. Road safety resources such as enforcement, temporary measures and engineering reviews are limited, so it is useful to know \emph{where} and \emph{when} collisions are most likely to occur. This project addresses the following prediction problem: \emph{for a given urban area cell and a given three-hour time window, estimate the probability that at least one police-reported injury collision will occur, using only information that is available before the window starts.} The output is a calibrated risk score for every cell and window. These scores can be ranked to produce risk maps and priority lists.
+
+\paragraph{Proposed approach.}
+The proposed system covers the Greater London area. The area is divided into a hexagonal grid using the H3 indexing system at resolution~8 \cite{h3}, and time is divided into three-hour windows. Each cell-window pair is one sample. Its label is derived from the official STATS19 collision records \cite{dft2025roadsafetydata}, and its features are built from five openly available data groups: (i) historical accident data, (ii) traffic conditions, (iii) weather, (iv) time and calendar, and (v) road characteristics. A gradient boosted decision tree model (LightGBM \cite{ke2017lightgbm}) is trained with explicit handling of class imbalance. Its outputs are calibrated to produce reliable probabilities and explained with TreeSHAP \cite{lundberg2020local}. All models are evaluated on a held-out future year.
+
+\paragraph{Justification.}
+The resulting data are tabular, heterogeneous (counts, continuous weather values, categorical calendar values, static road attributes) and contain missing values. On data of this type, tree-based ensembles still match or outperform deep neural networks while requiring far less tuning and compute \cite{grinsztajn2022tree}. LightGBM handles missing values natively, models non-linear interactions such as rain combined with darkness on a busy road, and trains on millions of rows on a standard laptop or in Google Colab. Its tree structure also allows exact and fast Shapley value explanations \cite{lundberg2020local}. This directly addresses the interpretability gap (G5) without the accuracy penalty usually associated with simple interpretable models.
+
+\paragraph{Differences from existing approaches.}
+Compared with the studies in \cref{tab:literature}, the proposed solution differs in five ways:
+(1) it predicts accident \emph{occurrence} over all cell-windows, including those without collisions, and uses only features that are known in advance;
+(2) it fuses five factor groups from public sources only, including an explicit traffic exposure estimate;
+(3) it uses imbalance-aware training and reports metrics that remain meaningful at a positive rate below 1\%;
+(4) it is validated on future years rather than random splits, including a stress test on a year in which the STATS19 specification changed;
+(5) it outputs calibrated probabilities together with explanations at both global and individual-prediction level.
+
+\paragraph{Expected improvements.}
+Compared with a historical accident-rate baseline and with standard classifiers (logistic regression, random forest, multilayer perceptron), the proposed model is \emph{expected} to achieve a higher area under the precision--recall curve and to capture a larger share of future collisions within the top-ranked cell-windows. It should also produce better calibrated probabilities and transparent explanations. These are hypotheses to be tested in the implementation phase. No experimental results are claimed in this section.
+
+% ===============================================================
+\subsection{Mapping Identified Research Gaps to Proposed Solutions}
+\label{sec:mapping}
+
+\Cref{tab:gapmap} connects each gap identified in \cref{sec:gap} with the proposed technique, the expected improvement and the reason the technique suits that gap. Each row is linked to a specific experiment in the evaluation plan (\cref{tab:experiments}), so that every claimed improvement can be tested.
+
+\begin{table}[htbp]
+\centering
+\caption{Mapping of the identified research gaps (G1--G6) to the proposed technical solutions.}
+\label{tab:gapmap}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.3cm} Y Y Y}
+\toprule
+\textbf{Research gap} & \textbf{Proposed technique} & \textbf{Expected improvement} & \textbf{Why the technique suits the gap} \\
+\midrule
+\textbf{G1} Problem framing and leakage &
+Cell-window formulation on an H3 grid with explicit non-accident samples; strict \emph{ex-ante} feature policy (police-recorded scene conditions excluded from inputs; light condition computed from solar position, road surface proxied by recent precipitation). &
+Estimates the true probability of occurrence and avoids inflated performance caused by post-event variables. &
+Every cell-window has a defined label, so negatives are represented. All features can be computed before the window starts, which matches real deployment. \\
+\addlinespace
+\textbf{G2} Limited integration of factors &
+Fusion of five public data groups on a common cell-window key: STATS19 history, DfT traffic counts (AADF) with national time-of-day profiles, Open-Meteo weather, OpenStreetMap road network, and calendar/solar features. Spatial lag features over neighbouring cells. &
+Better discrimination between busy and hazardous locations; contribution of each group measurable by ablation. &
+Accident risk depends on exposure, weather, time and design together \cite{theofilatos2014review,lord2010statistical}. Tree ensembles learn interactions between these groups without manual specification. \\
+\addlinespace
+\textbf{G3} Class imbalance and misleading metrics &
+Negative subsampling for training with analytical prior correction; class-weighted binary cross-entropy (focal loss as an alternative); PR-AUC, Recall@$k$ and Brier score as main metrics. &
+Higher recall of rare positive events at a useful precision; honest reporting that cannot be dominated by the majority class. &
+Prior correction restores true probabilities after subsampling \cite{king2001logistic,dalpozzolo2015calibrating}. PR-based metrics reflect performance on the minority class \cite{saito2015precision}. \\
+\addlinespace
+\textbf{G4} Optimistic validation &
+Chronological split (train 2018--2022, validation 2023, test 2024); expanding-window backtests; historical features computed only from past data; spatial block check; COVID-19 sensitivity run. &
+Realistic estimate of future performance and evidence of stability across years. &
+Temporal and spatial blocking is recommended for dependent data \cite{roberts2017cross,cerqueira2020evaluating}. 2024 is also the first year under the new STATS19 specification, which provides a natural drift test. \\
+\addlinespace
+\textbf{G5} Lack of interpretability &
+TreeSHAP global importance, dependence plots and local explanations for each high-risk cell-window; SHAP summaries per feature group shown next to risk maps. &
+Explanations that road safety staff can use and that identify the main factors (for example rain at night on arterial roads). &
+TreeSHAP computes exact Shapley values for tree ensembles in polynomial time \cite{lundberg2017unified,lundberg2020local}. \\
+\addlinespace
+\textbf{G6} Uncalibrated outputs and reproducibility &
+Isotonic calibration on the validation year; reliability diagrams and Brier score; only open data (OGL, ODbL, CC BY 4.0) and a public, version-controlled code base. &
+Probabilities that match observed frequencies; a pipeline that can be re-run and transferred to other UK cities. &
+Isotonic regression is a non-parametric calibrator suited to large validation sets \cite{zadrozny2002transforming,niculescu2005predicting}. STATS19 has the same structure for all of Great Britain. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ===============================================================
+\subsection{Proposed System Architecture}
+\label{sec:architecture}
+
+The overall workflow of the proposed system is illustrated in \cref{fig:architecture}. It consists of eleven stages, grouped into data, modelling and output layers.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig_architecture}
+\caption{High-level architecture of the proposed Urban Accident Risk Prediction System. Solid arrows show the main data flow; the dashed loop shows hyperparameter optimisation against the validation year.}
+\label{fig:architecture}
+\end{figure}
+
+\begin{enumerate}[label=\arabic*.]
+\item \textbf{Data acquisition.} Collision records, traffic counts, weather, road network and calendar data are downloaded from the public sources listed in \cref{tab:datasources}.
+\item \textbf{Spatio-temporal alignment.} Each record is assigned to an H3 resolution-8 cell and a three-hour window, so that all sources share the key $(i,t)$.
+\item \textbf{Preprocessing and cleaning.} Records are filtered to London, invalid coordinates and duplicates are removed, and missing values and units are handled (\cref{sec:preprocessing}).
+\item \textbf{Exploratory data analysis.} Temporal profiles, spatial clustering (global Moran's $I$ \cite{moran1950notes} and local LISA statistics \cite{anselin1995lisa}), the class ratio and feature distributions are analysed before modelling.
+\item \textbf{Feature engineering and selection.} The five factor groups are converted into model features, and redundant or leaking features are removed (\cref{sec:features}).
+\item \textbf{Training, validation and testing split.} The data are split chronologically (\cref{sec:validation}).
+\item \textbf{Model development and training.} Baseline models and the proposed LightGBM model are trained.
+\item \textbf{Hyperparameter optimisation.} Optuna with the Tree-structured Parzen Estimator searches the hyperparameter space using validation PR-AUC (\cref{sec:hpo}).
+\item \textbf{Calibration.} Scores are corrected for subsampling and calibrated with isotonic regression.
+\item \textbf{Model evaluation.} All models are compared on the untouched test year (\cref{sec:evaluation}).
+\item \textbf{Prediction and explainability.} Calibrated risk maps, top-$k$ priority lists and TreeSHAP explanations are generated as the system output.
+\end{enumerate}
+
+% ===============================================================
+\subsection{Proposed Machine Learning Methodology}
+\label{sec:methodology}
+
+\subsubsection{Dataset Source, Characteristics, Features and Target Variable}
+\label{sec:dataset}
+
+\paragraph{Study area and period.}
+The study area is Greater London (approximately 1,572\,km\textsuperscript{2}). Collisions are selected using the STATS19 \texttt{police\_force} codes for the Metropolitan Police and the City of London Police. At H3 resolution~8 (mean cell area $\approx$\,0.74\,km\textsuperscript{2}), London is covered by roughly 2,200 cells. The study period is 2018--2024 \cite{dft2025roadsafetydata}. Collision data for 2025, released by the Department for Transport after this design was fixed, will be used as an additional out-of-time check once the main experiments are complete. With eight windows per day, one year contains about $2{,}200 \times 2{,}920 \approx 6.4$ million cell-windows. Around 23,000 collisions are recorded in London per year \cite{tfl2024casualties}, so the expected positive rate is roughly 0.3--0.4\%. The exact value will be confirmed during EDA.
+
+\paragraph{Data sources.}
+\Cref{tab:datasources} lists the five data groups. All sources are free and openly licensed. No paid API or private data are required.
+
+\begin{table}[htbp]
+\centering
+\caption{Proposed data sources.}
+\label{tab:datasources}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.4cm} L{3.4cm} L{3.1cm} Y}
+\toprule
+\textbf{Factor group} & \textbf{Source} & \textbf{Granularity} & \textbf{Use in the system} \\
+\midrule
+Historical accidents & DfT STATS19 road safety open data \cite{dft2025roadsafetydata} (OGL v3.0) & Individual collisions with coordinates, date and time; 1979--2024 & Target label; historical and spatial-lag features. Scene attributes used only in EDA. \\
+Traffic conditions & DfT road traffic statistics, AADF by count point \cite{dft2025trafficcounts}; table TRA0307 \cite{dft2025tra0307} & Annual average daily flow per road link; national hour-of-day by day-of-week profile & Traffic exposure (vehicle-km) per cell and window; HGV, motorcycle and cycle shares. \\
+Weather & Open-Meteo Historical Weather API \cite{openmeteo} (ECMWF IFS / ERA5-Land reanalysis \cite{hersbach2020era5}; CC BY 4.0) & Hourly; $\approx$\,9--11\,km grid & Precipitation, temperature, wind, snowfall, cloud cover, humidity aggregated per window. \\
+Time and calendar & Python \texttt{holidays} package; solar position computed from coordinates and time & Per window & Cyclical time encodings, weekends, bank holidays, darkness indicator. \\
+Road characteristics & OpenStreetMap \cite{osm} via OSMnx \cite{boeing2017osmnx} (ODbL) & Road segments, junctions, points of interest & Road length by class, junction density, signals, crossings, bus stops, speed-limit tags, POI counts per cell. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Target variable.}
+Let $N_{i,t}$ be the number of STATS19 collisions in cell $i$ during window $t$. The binary target is defined in \cref{eq:target} in \cref{sec:math}: $y_{i,t}=1$ if at least one collision occurs and $0$ otherwise. All severities (slight, serious, fatal) are included, because severe collisions alone are too rare at this resolution. Severity-specific modelling is left for future work.
+
+\paragraph{Features.}
+The planned features are summarised in \cref{tab:features}. The final set will be confirmed after EDA and the selection procedure in \cref{sec:features}.
+
+\begin{table}[htbp]
+\centering
+\caption{Planned features per cell-window $(i,t)$, grouped by factor.}
+\label{tab:features}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.4cm} Y L{2.0cm}}
+\toprule
+\textbf{Group} & \textbf{Features} & \textbf{Type} \\
+\midrule
+Historical accidents & Collision counts in the same cell over the previous 7, 30 and 365 days; exponentially decayed collision intensity (\cref{eq:decay}); historical rate for the same window-of-week; spatial lags of these over 1- and 2-ring neighbours (\cref{eq:spatiallag}) & Numeric \\
+Traffic conditions & Estimated vehicle-km in the cell for the window (\cref{eq:exposure}); share of HGVs, two-wheeled motor vehicles and pedal cycles; flag for the AADF estimation method (counted or estimated) & Numeric, binary \\
+Weather & Total precipitation in the window and in the previous 3\,h (road surface proxy); mean temperature; frost indicator; maximum wind speed; snowfall; cloud cover; relative humidity & Numeric, binary \\
+Time and calendar & Window of day and month encoded with sine and cosine (\cref{eq:cyclic}); day of week; weekend; bank holiday; darkness indicator from solar elevation; COVID-19 restriction period indicator & Numeric, categorical \\
+Road characteristics & Road length by OSM class (motorway to residential); number of junctions with three or more arms; traffic signals; pedestrian crossings; bus stops; roundabouts; share of length tagged 20\,mph; cycle-lane length; POI counts (schools, pubs and bars, shops) & Numeric (static) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Data Preprocessing Techniques}
+\label{sec:preprocessing}
+
+The preprocessing pipeline is shown in \cref{fig:preprocessing}, and its steps are summarised with their purposes in \cref{tab:preprocessing}. Two rules apply throughout. First, any statistic fitted on data (scalers, encoders, imputation values, calibration maps) is fitted on the training or validation period only. Second, historical features at window $t$ use only records dated before the start of $t$.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig_preprocessing}
+\caption{Proposed data preprocessing pipeline. Each source is cleaned and aggregated to the common cell-window key before the join. Subsampling and scaling are applied only after the chronological split.}
+\label{fig:preprocessing}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Data preprocessing techniques and their purposes.}
+\label{tab:preprocessing}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{4.2cm} Y}
+\toprule
+\textbf{Technique} & \textbf{Purpose} \\
+\midrule
+Filtering by police force and London boundary & Restrict the data to the study area; remove records outside the H3 coverage. \\
+Removal of records without valid coordinates or time; duplicate removal on \texttt{collision\_index} & Ensure that every positive label can be placed in exactly one cell-window. \\
+Coordinate-to-H3 mapping; time-to-window binning & Create the common key $(i,t)$ used to join all sources. \\
+Nearest-grid-point assignment and window aggregation of weather (sum, mean, max) & Align hourly gridded weather with cells and three-hour windows. \\
+Spatial join of AADF count points and OSM features to cells & Convert point and line data into per-cell attributes. \\
+Missing-value handling: native handling in tree models; median imputation plus missing indicator for linear and neural models & Preserve information about missing data (for example road links without counts) without discarding samples. \\
+Outlier checks (physically impossible weather values, extreme AADF) & Detect data errors without removing genuine extreme events such as heavy rain. \\
+One-hot encoding (linear and neural models only); native categorical handling in LightGBM & Represent categorical variables appropriately for each model family. \\
+Z-score standardisation, fitted on training data (\cref{eq:zscore}) & Put features on a comparable scale for logistic regression and the MLP. Not required for tree models. \\
+Negative subsampling of the training set with rate $\beta$ (\cref{eq:priorcorr}) & Reduce training size and imbalance. Validation and test sets keep their natural class ratio. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Feature Engineering and Selection}
+\label{sec:features}
+
+\paragraph{Engineering.}
+Feature engineering follows the five groups in \cref{tab:features}. Cyclical time features (\cref{eq:cyclic}) preserve the fact that 23:00 is close to 00:00 and December is close to January. Historical accident features are smoothed with an exponential decay (\cref{eq:decay}), so that recent collisions count more than older ones. Spatial lag features (\cref{eq:spatiallag}) average neighbouring cells. This reduces noise in cells with few observations and captures the spatial clustering of collisions \cite{anselin1988spatial}. Traffic exposure (\cref{eq:exposure}) combines link-level AADF with link length and distributes the result over the week with the national TRA0307 profile. Exposure is one of the most important explanatory variables in crash modelling \cite{lord2010statistical}. Because darkness and wet roads are major risk factors \cite{theofilatos2014review}, but the police-recorded values exist only for collisions, both are reconstructed from independent sources: a darkness indicator from solar elevation, and a road-surface proxy from recent precipitation.
+
+\paragraph{Selection.}
+Feature selection is carried out in four steps:
+(1) a \emph{leakage audit}, in which every feature is checked to ensure that it can be computed before window $t$ starts;
+(2) removal of constant and near-constant features;
+(3) a correlation filter that keeps the more interpretable feature of any pair with $|\rho| > 0.95$;
+(4) model-based selection, in which features with negligible mean absolute SHAP value on the validation year are removed, and the change in validation PR-AUC is checked.
+Group-level ablation (\cref{tab:experiments}) then measures the contribution of each of the five factor groups.
+
+\subsubsection{Proposed Machine Learning Algorithms}
+\label{sec:algorithms}
+
+\Cref{tab:algorithms} compares the algorithms that will be implemented. The baselines cover a naive historical predictor, a linear model, a bagging ensemble and a neural network, so that the contribution of the proposed model can be judged against each type of approach.
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of the proposed machine learning algorithms and their role in the study.}
+\label{tab:algorithms}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.6cm} L{1.9cm} Y Y}
+\toprule
+\textbf{Algorithm} & \textbf{Role} & \textbf{Strengths for this problem} & \textbf{Limitations} \\
+\midrule
+Historical rate (B0) & Naive baseline & Equivalent to current hotspot practice; no training needed & Ignores weather, traffic and time-varying effects. \\
+Logistic regression, L2 (B1) \cite{hastie2009elements} & Linear baseline & Interpretable coefficients; well-calibrated by design & Cannot model interactions unless they are specified by hand. \\
+Random forest (B2) \cite{breiman2001random} & Ensemble baseline & Robust; few hyperparameters; class weighting supported & Large memory footprint; probabilities often poorly calibrated. \\
+Multilayer perceptron (B3) \cite{goodfellow2016deep} & Neural baseline & Learns non-linear interactions; represents the deep learning approach & Needs scaling and careful tuning; less effective on tabular data \cite{grinsztajn2022tree}; harder to explain. \\
+XGBoost (B4) \cite{chen2016xgboost} & Alternative GBDT & Strong regularised boosting; checks that results do not depend on one library & Slower than LightGBM on large data. \\
+\textbf{LightGBM (proposed)} \cite{ke2017lightgbm} & Main model & Fast histogram-based training on millions of rows; native handling of missing and categorical values; exact TreeSHAP & Can overfit sparse positives without regularisation and early stopping. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+LightGBM is selected as the main model for three reasons. First, its histogram-based, leaf-wise growth makes training on several million cell-windows practical on free cloud hardware. Second, its additive tree structure (\cref{eq:gbdt}) captures threshold effects and interactions that are typical of accident risk, such as high exposure combined with rain and darkness. Third, it supports custom weighted objectives and exact TreeSHAP explanations, which are needed for gaps G3 and G5.
+
+\subsubsection{Model Training and Validation Strategy}
+\label{sec:validation}
+
+The training and evaluation workflow is shown in \cref{fig:training}. The data are split chronologically:
+\begin{itemize}
+\item \textbf{Training:} 2018--2022. Includes the COVID-19 years, which are marked with an indicator feature.
+\item \textbf{Validation:} 2023. Used for early stopping, hyperparameter optimisation, calibration and threshold selection.
+\item \textbf{Test:} 2024. Used exactly once, after all design decisions have been fixed.
+\end{itemize}
+Two expanding-window backtests (train up to 2020, evaluate on 2021; train up to 2021, evaluate on 2022) check that the selected configuration performs consistently across years \cite{cerqueira2020evaluating}. A secondary spatial check groups cells by their H3 resolution-6 parent (about 36\,km\textsuperscript{2}) and holds out whole groups. This estimates how well the model generalises to areas it has not seen \cite{roberts2017cross}. Finally, a sensitivity run excludes 2020--2021 from training to measure the influence of pandemic-era traffic patterns.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig_training}
+\caption{Proposed training and evaluation workflow. Each row is one train/evaluate cycle over the study years. The test year (2024) is evaluated only once by the final configuration.}
+\label{fig:training}
+\end{figure}
+
+Within the training years, negatives are subsampled with rate $\beta$, while all positives are kept. A starting value of $\beta=0.05$ gives about 1.7 million training rows over five years. Predicted probabilities are then mapped back to the original class ratio using \cref{eq:priorcorr}. Validation and test years are evaluated on the full, unsampled grid. Predictions are produced in monthly chunks to keep memory use within Google Colab limits.
+
+\subsubsection{Hyperparameter Optimisation}
+\label{sec:hpo}
+
+Hyperparameters are optimised with Optuna \cite{akiba2019optuna} using the Tree-structured Parzen Estimator \cite{bergstra2011algorithms}. The objective is validation PR-AUC (\cref{eq:ap}). Each model is given 100 trials, and unpromising trials are stopped early with Optuna's median pruner. Tree ensembles use early stopping with a patience of 100 boosting rounds on the validation set. The search spaces are listed in \cref{tab:hyperparams}.
+
+\begin{table}[htbp]
+\centering
+\caption{Proposed model configurations and hyperparameter search spaces (log indicates log-uniform sampling).}
+\label{tab:hyperparams}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.6cm} Y}
+\toprule
+\textbf{Model} & \textbf{Hyperparameters and ranges} \\
+\midrule
+LightGBM (proposed) & \texttt{num\_leaves} 15--255; \texttt{learning\_rate} 0.01--0.2 (log); \texttt{min\_child\_samples} 20--500; \texttt{feature\_fraction} 0.5--1.0; \texttt{bagging\_fraction} 0.5--1.0; \texttt{lambda\_l1}, \texttt{lambda\_l2} $10^{-8}$--10 (log); positive class weight $w_{+}$ 1--20; up to 5,000 rounds with early stopping \\
+XGBoost (B4) & \texttt{max\_depth} 3--10; \texttt{eta} 0.01--0.2 (log); \texttt{subsample}, \texttt{colsample\_bytree} 0.5--1.0; \texttt{min\_child\_weight} 1--50; \texttt{lambda} $10^{-8}$--10 (log); \texttt{scale\_pos\_weight} 1--20; histogram tree method \\
+Random forest (B2) & \texttt{n\_estimators} 300--1,000; \texttt{max\_depth} 8--30 or unlimited; \texttt{min\_samples\_leaf} 1--100; \texttt{max\_features} \{sqrt, 0.3, 0.5\}; \texttt{class\_weight} \{balanced\_subsample, none\} \\
+Logistic regression (B1) & L2 penalty; $C$ $10^{-4}$--10 (log); \texttt{class\_weight} \{balanced, none\}; L-BFGS solver \\
+MLP (B3) & 2--3 hidden layers of 64--256 ReLU units; dropout 0.1--0.5; Adam with learning rate $10^{-4}$--$10^{-2}$ (log); weight decay $10^{-6}$--$10^{-3}$ (log); batch size 1,024; early stopping on validation PR-AUC \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Loss Functions and Optimisation Algorithms}
+\label{sec:loss}
+
+All models are trained as binary probabilistic classifiers. The common training criterion is the class-weighted binary cross-entropy (\cref{eq:wbce}), with the positive class weight $w_{+}$ tuned as a hyperparameter. Focal loss (\cref{eq:focal}) is evaluated as an alternative for LightGBM and the MLP, because it reduces the influence of the many easy negatives \cite{lin2017focal}. Logistic regression is fitted with L-BFGS. The MLP is trained with Adam (\cref{eq:adam}) \cite{kingma2015adam}. LightGBM and XGBoost minimise the loss through second-order gradient boosting (\cref{eq:gbdtobj,eq:leaf}) \cite{friedman2001greedy,chen2016xgboost}. Oversampling with SMOTE \cite{chawla2002smote} is not proposed as the main strategy. Synthetic cell-windows would mix the coordinates of different locations and times and would distort the probability estimates, which the system needs to be calibrated (G6).
+
+% ===============================================================
+\subsection{Additional Technical Diagrams}
+\label{sec:diagrams}
+
+In addition to the system architecture (\cref{fig:architecture}), the preprocessing pipeline (\cref{fig:preprocessing}) and the training workflow (\cref{fig:training}), \cref{fig:model} shows the proposed hybrid prediction framework. It shows how the five feature groups are combined in the boosted ensemble and how the raw score is turned into a calibrated, explained risk estimate.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig_model}
+\caption{Proposed prediction framework. The LightGBM ensemble produces a raw score that is converted to a probability, corrected for negative subsampling and calibrated. TreeSHAP decomposes each prediction into contributions of the input features.}
+\label{fig:model}
+\end{figure}
+
+% ===============================================================
+\subsection{Proposed Evaluation Strategy}
+\label{sec:evaluation}
+
+\paragraph{Metrics.}
+The task is binary classification with extreme class imbalance. Accuracy is therefore \emph{not} used as a main metric: a model that always predicts ``no accident'' would reach more than 99\% accuracy. The metrics in \cref{tab:metrics} are used instead. The primary metric is PR-AUC (average precision), because it focuses on performance on the rare positive class \cite{saito2015precision,davis2006relationship}. Recall@$k$ measures the share of collisions captured when only the top $k\%$ of cell-windows are flagged. This corresponds to a real resource constraint, for example patrols available for 5\% of locations. Calibration is measured with the Brier score and reliability diagrams \cite{brier1950verification}. Precision, recall, F1-score and the confusion matrix are reported at a decision threshold selected on the validation year, either the threshold that maximises F1 or the threshold that corresponds to a top-5\% budget.
+
+\begin{table}[htbp]
+\centering
+\caption{Evaluation metrics, their definitions and the reason for their use.}
+\label{tab:metrics}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.7cm} L{2.1cm} Y}
+\toprule
+\textbf{Metric} & \textbf{Definition} & \textbf{Why it is appropriate} \\
+\midrule
+PR-AUC (average precision) & Eq.~\eqref{eq:ap} & Primary metric. Insensitive to the very large number of true negatives \cite{saito2015precision}. \\
+Recall@$k$ (capture rate) & Eq.~\eqref{eq:recallk} & Directly measures operational value under a fixed inspection budget. \\
+ROC-AUC & Eq.~\eqref{eq:rocauc} & Reported for comparability with earlier studies \cite{fawcett2006introduction}; interpreted with caution under imbalance. \\
+Precision, Recall, F1 & Eqs.~\eqref{eq:precision}--\eqref{eq:f1} & Performance at the selected threshold: false alarms against missed collisions. \\
+Confusion matrix & Counts of TP, FP, FN, TN & Shows the absolute numbers behind precision and recall. \\
+Brier score; reliability diagram & Eq.~\eqref{eq:brier} & Checks whether predicted probabilities match observed frequencies (G6). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Baselines and comparison.}
+All models in \cref{tab:algorithms} are trained on the same features and splits. Differences in test PR-AUC and Recall@5\% are reported with 95\% confidence intervals obtained by a paired moving-block bootstrap over days (1,000 resamples) \cite{efron1993introduction,kunsch1989jackknife}. This preserves temporal dependence in the test year. \Cref{tab:experiments} lists the planned experiments and shows which gap each one tests.
+
+\begin{table}[htbp]
+\centering
+\caption{Baseline comparison and ablation strategy, linked to the research gaps.}
+\label{tab:experiments}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{0.6cm} Y Y L{1.0cm}}
+\toprule
+\textbf{ID} & \textbf{Experiment} & \textbf{Question answered} & \textbf{Gap} \\
+\midrule
+E1 & Proposed model against B0--B4 on the 2024 test year & Does the proposed model outperform naive, linear, bagging, neural and alternative boosting approaches? & G2, G3 \\
+E2 & Proposed model with police-recorded scene attributes (road surface, light conditions) added as inputs, with values for non-collision samples imputed & How strongly do post-event variables inflate apparent performance? & G1 \\
+E3 & Leave-one-group-out ablation over the five feature groups & What does each factor group contribute? & G2 \\
+E4 & No class weighting, class weighting, focal loss & Which imbalance strategy works best for PR-AUC and Recall@$k$? & G3 \\
+E5 & Random split against chronological split; backtests 2021 and 2022; spatial block hold-out; 2020--2021 excluded & How optimistic is random validation, and is performance stable over time and space? & G4 \\
+E6 & Observed (reanalysis) weather against archived weather forecasts for 2024 & How much performance is lost when only forecasts are available, as in real deployment? & G1, G4 \\
+E7 & Uncalibrated, prior-corrected and isotonic-calibrated outputs & Are the final probabilities reliable? & G6 \\
+E8 & TreeSHAP global and local analysis on test predictions & Are the main risk factors plausible and consistent with road safety literature? & G5 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ===============================================================
+\subsection{Proposed Tools and Technologies}
+\label{sec:tools}
+
+The tools listed in \cref{tab:tools} are free and run in Google Colab or on a standard laptop. The code base will be version-controlled in a shared Git repository, and the paper is written collaboratively in Overleaf.
+
+\begin{table}[htbp]
+\centering
+\caption{Proposed tools and technologies.}
+\label{tab:tools}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{3.3cm} Y}
+\toprule
+\textbf{Category} & \textbf{Tools} \\
+\midrule
+Programming language & Python 3.11 \\
+Data processing & Pandas \cite{mckinney2010data}, NumPy \cite{harris2020array}, GeoPandas, \texttt{h3} (H3 Python bindings) \cite{h3}, Parquet file format \\
+Geospatial data & OSMnx \cite{boeing2017osmnx}, Shapely, Open-Meteo API client \\
+Machine learning & Scikit-learn \cite{pedregosa2011scikit} (logistic regression, random forest, isotonic calibration, metrics), LightGBM \cite{ke2017lightgbm}, XGBoost \cite{chen2016xgboost}, PyTorch \cite{paszke2019pytorch} (MLP) \\
+Hyperparameter optimisation & Optuna \cite{akiba2019optuna} \\
+Explainability & SHAP (TreeSHAP) \cite{lundberg2020local}; LIME \cite{ribeiro2016why} as a secondary check on the MLP \\
+Visualisation & Matplotlib \cite{hunter2007matplotlib}, Seaborn \cite{waskom2021seaborn}, Folium (interactive risk maps) \\
+Development environment & Jupyter Notebook, Google Colab, VS Code, Git and GitHub, Overleaf \\
+Datasets & DfT STATS19 \cite{dft2025roadsafetydata}; DfT road traffic statistics \cite{dft2025trafficcounts,dft2025tra0307}; Open-Meteo \cite{openmeteo}; OpenStreetMap \cite{osm} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ===============================================================
+\subsection{Mathematical Formulations and Technical Details}
+\label{sec:math}
+
+This section defines the equations used in the proposed methodology. Throughout, $i$ indexes H3 cells, $t$ indexes three-hour windows, and $\mathbf{x}_{i,t}\in\mathbb{R}^{d}$ is the feature vector of cell $i$ in window $t$.
+
+\paragraph{Target and prediction task.}
+The binary target is
+\begin{equation}
+y_{i,t} = \mathbb{1}\left[N_{i,t} \geq 1\right],
+\label{eq:target}
+\end{equation}
+where $N_{i,t}$ is the number of STATS19 collisions in cell $i$ during window $t$ and $\mathbb{1}[\cdot]$ is the indicator function. The model estimates the conditional probability
+\begin{equation}
+\hat{p}_{i,t} = f_{\bm{\theta}}(\mathbf{x}_{i,t}) \approx P\left(y_{i,t}=1 \mid \mathbf{x}_{i,t}\right),
+\label{eq:task}
+\end{equation}
+where $f_{\bm{\theta}}$ is a classifier with parameters $\bm{\theta}$ and $\mathbf{x}_{i,t}$ contains only information available before $t$ begins (G1).
+
+\paragraph{Feature transformations.}
+For logistic regression and the MLP, each numeric feature is standardised using z-score standardisation \cite{hastie2009elements}:
+\begin{equation}
+z = \frac{x - \mu}{\sigma},
+\label{eq:zscore}
+\end{equation}
+where $x$ is the original feature value, and $\mu$ and $\sigma$ are the mean and standard deviation of the feature computed on the \emph{training} period only, to avoid leakage. Periodic variables such as the window of day ($P=8$) and the month ($P=12$) are encoded as
+\begin{equation}
+u_{\sin} = \sin\!\left(\frac{2\pi u}{P}\right), \qquad
+u_{\cos} = \cos\!\left(\frac{2\pi u}{P}\right),
+\label{eq:cyclic}
+\end{equation}
+where $u \in \{0,\dots,P-1\}$ is the position within the cycle and $P$ is the period length. This places the last window of one cycle next to the first window of the next.
+
+\paragraph{Historical and spatial features.}
+The decayed historical collision intensity of cell $i$ before window $t$ is
+\begin{equation}
+h_{i,t} = \sum_{\tau < t} \exp\!\left(-\frac{t-\tau}{\kappa}\right) N_{i,\tau},
+\label{eq:decay}
+\end{equation}
+where $\tau$ runs over all past windows and $\kappa>0$ is a decay constant measured in windows. Values corresponding to half-lives of 30 and 365 days will be compared on the validation year. The spatial lag of a feature $h$ over the $k$-ring neighbourhood $\mathcal{R}_k(i)$ of cell $i$ (all cells within $k$ hexagonal steps, excluding $i$) is defined, following \cite{anselin1988spatial}, as
+\begin{equation}
+s^{(k)}_{i,t} = \frac{1}{\left|\mathcal{R}_k(i)\right|} \sum_{j \in \mathcal{R}_k(i)} h_{j,t},
+\label{eq:spatiallag}
+\end{equation}
+with $k \in \{1,2\}$, where $|\mathcal{R}_1(i)|=6$ and $|\mathcal{R}_2(i)|=18$ for interior cells.
+
+\paragraph{Traffic exposure.}
+Traffic exposure of cell $i$ in window $t$ is estimated as
+\begin{equation}
+E_{i,t} = \omega_{d(t),\,w(t)} \sum_{c \in \mathcal{C}_i} A_{c,\,y(t)} \, L_{c},
+\label{eq:exposure}
+\end{equation}
+where $\mathcal{C}_i$ is the set of DfT count points located in cell $i$, $A_{c,y}$ is the annual average daily flow of all motor vehicles at count point $c$ in year $y$, $L_c$ is the length of the corresponding road link in km, and $\omega_{d,w}$ is the share of daily traffic that falls into window $w$ on weekday $d$, taken from table TRA0307 \cite{dft2025tra0307}. $E_{i,t}$ is an estimate of vehicle-km and serves as the exposure term that is central in crash-frequency analysis \cite{lord2010statistical}.
+
+\paragraph{Logistic regression and activation functions.}
+The logistic regression baseline computes
+\begin{equation}
+\hat{p} = \sigma\!\left(\mathbf{w}^{\top}\mathbf{x} + b\right), \qquad
+\sigma(a) = \frac{1}{1+e^{-a}},
+\label{eq:logreg}
+\end{equation}
+where $\mathbf{w}$ is the weight vector, $b$ is the bias and $\sigma$ is the sigmoid function, which maps a real-valued score to a probability \cite{hastie2009elements}.
+
+\paragraph{Multilayer perceptron.}
+The MLP baseline with $L$ hidden layers computes
+\begin{equation}
+\mathbf{a}^{(0)} = \mathbf{x}, \qquad
+\mathbf{a}^{(l)} = \mathrm{ReLU}\!\left(\mathbf{W}^{(l)}\mathbf{a}^{(l-1)} + \mathbf{b}^{(l)}\right), \qquad
+\hat{p} = \sigma\!\left(\mathbf{w}^{\top}_{\text{out}}\mathbf{a}^{(L)} + b_{\text{out}}\right),
+\label{eq:mlp}
+\end{equation}
+where $\mathbf{W}^{(l)}$ and $\mathbf{b}^{(l)}$ are the weights and biases of layer $l$ and $\mathrm{ReLU}(a)=\max(0,a)$ is applied element-wise \cite{goodfellow2016deep}. Gradients of the loss with respect to all weights are obtained by backpropagation.
+
+\paragraph{Loss functions.}
+Over a training set of $n$ samples, the class-weighted binary cross-entropy is
+\begin{equation}
+\mathcal{L}_{\text{wBCE}} = -\frac{1}{n}\sum_{m=1}^{n} \Big[ w_{+}\, y_m \log \hat{p}_m + (1-y_m)\log\left(1-\hat{p}_m\right) \Big],
+\label{eq:wbce}
+\end{equation}
+where $y_m \in \{0,1\}$ is the label of sample $m$, $\hat{p}_m$ is its predicted probability and $w_{+}\geq 1$ increases the penalty for missed collisions (G3) \cite{he2009learning}. The focal loss alternative \cite{lin2017focal} is
+\begin{equation}
+\mathcal{L}_{\text{focal}} = -\frac{1}{n}\sum_{m=1}^{n} \Big[ \alpha\, y_m (1-\hat{p}_m)^{\gamma} \log \hat{p}_m + (1-\alpha)(1-y_m)\,\hat{p}_m^{\gamma} \log\left(1-\hat{p}_m\right) \Big],
+\label{eq:focal}
+\end{equation}
+where $\alpha \in (0,1)$ balances the two classes and $\gamma \geq 0$ reduces the loss of well-classified samples. For $\gamma=0$ the focal loss reduces to the weighted cross-entropy.
+
+\paragraph{Gradient boosting.}
+LightGBM and XGBoost build an additive ensemble of $M$ regression trees \cite{friedman2001greedy}:
+\begin{equation}
+F_M(\mathbf{x}) = F_0 + \eta \sum_{m=1}^{M} f_m(\mathbf{x}), \qquad \hat{p} = \sigma\!\left(F_M(\mathbf{x})\right),
+\label{eq:gbdt}
+\end{equation}
+where $F_0$ is the initial log-odds, $f_m$ is the $m$-th tree and $\eta$ is the learning rate. Tree $f_m$ is fitted to a second-order approximation of the regularised loss \cite{chen2016xgboost}:
+\begin{equation}
+\tilde{\mathcal{L}}^{(m)} = \sum_{n} \Big[ g_n f_m(\mathbf{x}_n) + \tfrac{1}{2} h_n f_m(\mathbf{x}_n)^2 \Big] + \gamma_{\text{T}} T + \tfrac{1}{2}\lambda \sum_{j=1}^{T} v_j^2,
+\label{eq:gbdtobj}
+\end{equation}
+where $T$ is the number of leaves, $v_j$ is the output value of leaf $j$, $\gamma_{\text{T}}$ and $\lambda$ are regularisation parameters, and $g_n$, $h_n$ are the first and second derivatives of the loss with respect to the current score. For the weighted cross-entropy in \cref{eq:wbce}, with sample weight $\varpi_n = w_{+}$ for positives and $1$ for negatives, these are $g_n = \varpi_n(\hat{p}_n - y_n)$ and $h_n = \varpi_n\hat{p}_n(1-\hat{p}_n)$. The optimal leaf value and the gain of a split into left ($\mathrm{L}$) and right ($\mathrm{R}$) children are
+\begin{equation}
+v_j^{*} = -\frac{G_j}{H_j + \lambda}, \qquad
+\mathrm{Gain} = \frac{1}{2}\left[\frac{G_{\mathrm{L}}^2}{H_{\mathrm{L}}+\lambda} + \frac{G_{\mathrm{R}}^2}{H_{\mathrm{R}}+\lambda} - \frac{(G_{\mathrm{L}}+G_{\mathrm{R}})^2}{H_{\mathrm{L}}+H_{\mathrm{R}}+\lambda}\right] - \gamma_{\text{T}},
+\label{eq:leaf}
+\end{equation}
+where $G_j=\sum_{n \in j} g_n$ and $H_j=\sum_{n \in j} h_n$ are summed over the samples in leaf $j$. Increasing $w_{+}$ therefore directly increases the gradient contribution of collision samples during tree construction.
+
+\paragraph{Adam optimiser.}
+The MLP parameters $\bm{\theta}$ are updated at step $s$ with Adam \cite{kingma2015adam}:
+\begin{equation}
+\mathbf{m}_s = \beta_1 \mathbf{m}_{s-1} + (1-\beta_1)\mathbf{g}_s, \quad
+\mathbf{v}_s = \beta_2 \mathbf{v}_{s-1} + (1-\beta_2)\mathbf{g}_s^{2}, \quad
+\bm{\theta}_s = \bm{\theta}_{s-1} - \alpha_{\text{lr}} \frac{\hat{\mathbf{m}}_s}{\sqrt{\hat{\mathbf{v}}_s} + \epsilon},
+\label{eq:adam}
+\end{equation}
+where $\mathbf{g}_s$ is the mini-batch gradient, $\hat{\mathbf{m}}_s=\mathbf{m}_s/(1-\beta_1^{s})$ and $\hat{\mathbf{v}}_s=\mathbf{v}_s/(1-\beta_2^{s})$ are bias-corrected moment estimates, $\alpha_{\text{lr}}$ is the learning rate, and $\beta_1=0.9$, $\beta_2=0.999$, $\epsilon=10^{-8}$ are the default constants.
+
+\paragraph{Correction for negative subsampling.}
+If negatives are kept with probability $\beta$ and all positives are kept, a model trained on the subsampled data overestimates the odds of a collision by a factor of $1/\beta$. The probability $p_s$ predicted by such a model is mapped back to the original class distribution by \cite{king2001logistic,dalpozzolo2015calibrating}
+\begin{equation}
+\hat{p} = \frac{\beta\, p_s}{\beta\, p_s + 1 - p_s}.
+\label{eq:priorcorr}
+\end{equation}
+
+\paragraph{Isotonic calibration.}
+The corrected scores are calibrated on the validation year by fitting a non-decreasing function $g$ \cite{zadrozny2002transforming,niculescu2005predicting}:
+\begin{equation}
+g^{*} = \arg\min_{g \,\in\, \mathcal{G}_{\uparrow}} \sum_{m=1}^{n_{\text{val}}} \left( y_m - g(\hat{p}_m) \right)^2,
+\label{eq:isotonic}
+\end{equation}
+where $\mathcal{G}_{\uparrow}$ is the set of monotonically non-decreasing functions and $n_{\text{val}}$ is the number of validation samples. Because $g$ is monotonic, the order of cell-windows is never reversed. Ranking metrics (PR-AUC, ROC-AUC, Recall@$k$) can change only slightly through ties created by the step-shaped function, so the main effect is on the probability scale. The prior correction in \cref{eq:priorcorr} is strictly increasing and leaves the ranking unchanged.
+
+\paragraph{SHAP explanations.}
+TreeSHAP decomposes each prediction (in log-odds) additively \cite{lundberg2017unified,lundberg2020local}:
+\begin{equation}
+F(\mathbf{x}) = \phi_0 + \sum_{j=1}^{d} \phi_j(\mathbf{x}), \qquad
+\phi_j = \sum_{S \subseteq \mathcal{F}\setminus\{j\}} \frac{|S|!\,(d-|S|-1)!}{d!} \Big[ F_{S\cup\{j\}}(\mathbf{x}) - F_{S}(\mathbf{x}) \Big],
+\label{eq:shap}
+\end{equation}
+where $\mathcal{F}$ is the set of $d$ features, $\phi_0$ is the expected model output, $\phi_j$ is the contribution of feature $j$, and $F_S$ is the expected model output when only the features in $S$ are known. Group-level importance is obtained by summing $|\phi_j|$ over the features of each of the five groups.
+
+\paragraph{Evaluation metrics.}
+With true positives (TP), false positives (FP) and false negatives (FN) counted at a threshold $\delta$ (a cell-window is flagged if $\hat{p}_{i,t} \geq \delta$):
+\begin{align}
+\mathrm{Precision} &= \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}}, \label{eq:precision}\\
+\mathrm{Recall} &= \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}}, \label{eq:recall}\\
+\mathrm{F1} &= 2\cdot\frac{\mathrm{Precision}\cdot\mathrm{Recall}}{\mathrm{Precision}+\mathrm{Recall}}. \label{eq:f1}
+\end{align}
+PR-AUC is computed as average precision over the ranked predictions \cite{davis2006relationship}:
+\begin{equation}
+\mathrm{AP} = \sum_{r} \left(\mathrm{R}_r - \mathrm{R}_{r-1}\right) \mathrm{P}_r,
+\label{eq:ap}
+\end{equation}
+where $\mathrm{P}_r$ and $\mathrm{R}_r$ are precision and recall at the $r$-th threshold. ROC-AUC equals the probability that a randomly chosen positive is ranked above a randomly chosen negative \cite{fawcett2006introduction}:
+\begin{equation}
+\mathrm{ROC\text{-}AUC} = \frac{1}{|\mathcal{P}|\,|\mathcal{N}|} \sum_{a \in \mathcal{P}} \sum_{b \in \mathcal{N}} \mathbb{1}\left[\hat{p}_a > \hat{p}_b\right],
+\label{eq:rocauc}
+\end{equation}
+where $\mathcal{P}$ and $\mathcal{N}$ are the sets of positive and negative samples (ties counted as $\tfrac{1}{2}$). The capture rate at budget $k$ is
+\begin{equation}
+\mathrm{Recall@}k = \frac{\sum_{(i,t) \in \mathcal{T}_k} y_{i,t}}{\sum_{(i,t)} y_{i,t}},
+\label{eq:recallk}
+\end{equation}
+where $\mathcal{T}_k$ is the set of the top $k\%$ cell-windows ranked by $\hat{p}_{i,t}$. Finally, the Brier score over $n$ test samples is \cite{brier1950verification}
+\begin{equation}
+\mathrm{BS} = \frac{1}{n}\sum_{m=1}^{n} \left(\hat{p}_m - y_m\right)^2,
+\label{eq:brier}
+\end{equation}
+where lower values indicate more accurate and better calibrated probabilities.
+
+% ===============================================================
+\subsection{Expected Contributions and Improvements}
+\label{sec:contributions}
+
+\paragraph{Expected improvements.}
+The following improvements are \emph{expected} on the basis of the literature and the design choices above. None has yet been demonstrated experimentally. They will be confirmed or rejected by experiments E1--E8 in \cref{tab:experiments}.
+\begin{itemize}
+\item \textbf{Accuracy:} higher PR-AUC and Recall@5\% than the historical-rate baseline, because weather, exposure and time are added to accident history (G2). Higher scores than the linear and neural baselines, because the boosted trees model interactions on tabular data efficiently \cite{grinsztajn2022tree}.
+\item \textbf{Robustness:} more realistic and stable performance estimates through chronological and spatial validation (G4). Limited sensitivity to the 2024 STATS19 specification change, because no police-recorded scene attributes are used as inputs (G1).
+\item \textbf{Interpretability:} global and local explanations for every prediction through TreeSHAP (G5).
+\item \textbf{Reliability:} calibrated probabilities that can be used directly for planning (G6).
+\item \textbf{Efficiency and scalability:} training in minutes on free cloud hardware; the same pipeline can be applied to any other UK city by changing the boundary and police-force filter.
+\end{itemize}
+
+\paragraph{Advantages over existing approaches.}
+Unlike the deep spatio-temporal models in \cref{tab:literature}, the proposed system uses only open data, requires no real-time traffic feed and explains its predictions. Unlike classical crash-frequency models, it works at a resolution of three hours and less than 1\,km\textsuperscript{2}, and it learns non-linear effects without manual specification.
+
+\paragraph{Potential limitations and implementation challenges.}
+\begin{itemize}
+\item \textbf{Traffic data:} DfT AADF values are annual averages. Estimates for minor roads are less robust than those for major roads \cite{dft2025trafficcounts}, and hourly variation comes from a national rather than a local profile. Real-time congestion is not captured.
+\item \textbf{Weather resolution:} reanalysis data have a resolution of about 9--11\,km, so very local showers may be missed. Using observed weather is optimistic compared with deployment based on forecasts, which experiment E6 quantifies.
+\item \textbf{Static road data:} the OpenStreetMap network reflects its current state and not the state in each study year. Changes such as new 20\,mph zones may therefore be assigned to earlier years.
+\item \textbf{Under-reporting:} STATS19 contains only injury collisions reported to the police. Collisions with damage only, and some injury collisions, are therefore missing, so the model predicts \emph{reported} injury collision risk.
+\item \textbf{Data volume:} about 6.4 million cell-windows per year require chunked processing and the Parquet format to stay within Colab memory limits.
+\item \textbf{Temporal drift:} pandemic-era traffic and the 2024 change in data specification may shift the data distribution. This is monitored with backtests and the sensitivity run.
+\item \textbf{Causal interpretation:} SHAP values describe associations learned by the model, not causal effects, and will be interpreted accordingly.
+\end{itemize}
+
+\paragraph{Expected contribution.}
+The project is expected to contribute:
+(1) a reproducible, open-data pipeline that builds a leakage-free spatio-temporal dataset of accident risk for Greater London from five public sources;
+(2) a calibrated and explainable LightGBM-based risk model, evaluated against four baseline families on a future test year;
+(3) a quantitative comparison of evaluation practices (random against chronological splits, inclusion against exclusion of post-event variables) that shows how strongly common practices can bias reported performance;
+(4) risk maps and explanations at cell level that can support the prioritisation of road safety measures.

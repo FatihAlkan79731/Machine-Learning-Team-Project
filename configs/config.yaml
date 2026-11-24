@@ -1,0 +1,66 @@
+# Central configuration of the Urban Accident Risk Prediction System.
+# Values follow the Proposed Solution section of the paper.
+
+study_area:
+  name: Greater London
+  # STATS19 police_force codes: 1 = Metropolitan Police, 48 = City of London Police
+  police_forces: [1, 48]
+  # Approximate bounding box (min_lon, min_lat, max_lon, max_lat)
+  bbox: [-0.5103, 51.2868, 0.3340, 51.6919]
+
+grid:
+  h3_resolution: 8          # mean cell area about 0.74 km2
+  spatial_block_resolution: 6  # parent resolution used for spatial block checks
+
+time:
+  window_hours: 3           # eight windows per day
+  timezone: Europe/London
+  years: [2018, 2019, 2020, 2021, 2022, 2023, 2024]
+  covid_periods:            # restriction periods flagged as a feature
+    - ["2020-03-23", "2020-07-04"]
+    - ["2020-11-05", "2020-12-02"]
+    - ["2021-01-06", "2021-07-19"]
+
+splits:
+  train_years: [2018, 2019, 2020, 2021, 2022]
+  validation_years: [2023]
+  test_years: [2024]
+  backtests:
+    - {train: [2018, 2019, 2020], evaluate: [2021]}
+    - {train: [2018, 2019, 2020, 2021], evaluate: [2022]}
+
+sampling:
+  negative_rate: 0.05       # beta: share of non-collision cell-windows kept in training
+  random_seed: 42
+
+features:
+  history_windows_days: [7, 30, 365]
+  decay_half_life_days: [30, 365]
+  spatial_lag_rings: [1, 2]
+
+weather:
+  api_url: https://archive-api.open-meteo.com/v1/archive
+  hourly_variables:
+    - temperature_2m
+    - relative_humidity_2m
+    - precipitation
+    - rain
+    - snowfall
+    - cloud_cover
+    - wind_speed_10m
+    - wind_gusts_10m
+  grid_spacing_deg: 0.1
+
+evaluation:
+  primary_metric: pr_auc
+  recall_at_k_percent: [1, 5, 10]
+  bootstrap_resamples: 1000
+  bootstrap_block_days: 7
+
+paths:
+  raw: data/raw
+  interim: data/interim
+  processed: data/processed
+  external: data/external
+  models: models
+  figures: reports/figures

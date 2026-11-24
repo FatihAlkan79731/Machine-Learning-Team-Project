@@ -1,0 +1,40 @@
+\section{Gap Analysis}
+\label{sec:gap}
+
+Research on road traffic accident prediction follows two main lines. The first is statistical crash-frequency modelling, in which Poisson, negative binomial and related count models relate the number of crashes on a road segment or in an area to traffic exposure and road design over a period of months or years \cite{lord2010statistical,mannering2014analytic}. These models are interpretable and well understood. However, they assume a fixed functional form, are usually estimated on annually aggregated data, and are not designed to produce short-term, location-specific risk estimates. The second line uses machine learning and deep learning to predict accident occurrence or accident risk over a spatial grid at hourly or finer resolution. \Cref{tab:literature} summarises the studies that are closest to the system proposed in this project.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of representative studies on spatio-temporal accident risk prediction.}
+\label{tab:literature}
+\footnotesize
+\begin{tabularx}{\textwidth}{L{2.6cm} L{3.0cm} L{3.4cm} Y}
+\toprule
+\textbf{Study} & \textbf{Data and region} & \textbf{Method} & \textbf{Limitation relevant to this project} \\
+\midrule
+Lord and Mannering \cite{lord2010statistical}; Mannering and Bhat \cite{mannering2014analytic} & Review of crash-frequency studies & Poisson, negative binomial and extensions & Aggregated over long periods; fixed functional forms; limited non-linear interactions; not intended for short-term prediction. \\
+Chen et al.\ \cite{chen2016learning} & Japan; large-scale GPS mobility data and accident records & Stacked denoising autoencoder & Depends on proprietary mobility data that cannot be reproduced; no explanation of predictions. \\
+Yuan et al.\ \cite{yuan2018hetero} & State of Iowa, USA; heterogeneous spatio-temporal data & Hetero-ConvLSTM & Deep model with limited interpretability; coarse spatial and temporal resolution for intra-urban use. \\
+Ren et al.\ \cite{ren2018deep} & Beijing; accident records & LSTM on citywide grid & Uses historical accident records only; external factors such as weather and road design are not modelled. \\
+Moosavi et al.\ \cite{moosavi2019accident} & Six US cities (US-Accidents); traffic events, weather, POI, time & Deep Accident Prediction (DAP) with negative sampling & 5\,km\,$\times$\,5\,km regions are coarse for urban planning; accident labels collected from traffic-event feeds rather than official injury records. \\
+Zhou et al.\ \cite{zhou2020riskoracle} & New York City and Suzhou; accidents, taxi trips, traffic speed & Multi-task graph network (RiskOracle) & Requires real-time traffic data that is not openly available in many cities; complex model without feature-level explanations. \\
+Wang et al.\ \cite{wang2021gsnet} & New York City and Chicago; multi-source data & GSNet with weighted loss for zero inflation & Black-box architecture; does not provide calibrated probabilities or feature-level explanations for decision makers. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Based on this review, six research gaps are identified. They are referred to as G1--G6 throughout the rest of the paper.
+
+\begin{description}[leftmargin=0.9cm, style=nextline]
+\item[G1] \textbf{Problem framing and information leakage.} Many applied studies train only on recorded accidents (for example, to classify severity) and therefore cannot estimate the probability that an accident will occur. Others use attributes that are recorded by the police \emph{after} a collision, such as road surface or light conditions on the report, as model inputs. These attributes are not available in advance and do not exist for locations without a collision, so models that use them overestimate their real predictive power.
+
+\item[G2] \textbf{Limited integration of heterogeneous factors.} Accident risk is influenced by traffic exposure, weather, time and road design at the same time \cite{theofilatos2014review,lord2010statistical}. Studies tend to rely on one or two of these sources \cite{ren2018deep}, or on data that are proprietary \cite{chen2016learning,zhou2020riskoracle}. Traffic exposure in particular is often missing, which makes it hard to separate busy locations from genuinely hazardous ones.
+
+\item[G3] \textbf{Extreme class imbalance and misleading metrics.} Within a fine spatio-temporal grid, the large majority of cell-time units contain no accident, a problem described in the literature as zero inflation \cite{zhou2020riskoracle,wang2021gsnet}. Under such imbalance, accuracy and ROC-AUC can look high even for weak models \cite{saito2015precision,he2009learning}, yet these metrics remain common in applied work.
+
+\item[G4] \textbf{Optimistic validation of spatio-temporal models.} Randomly shuffled train/test splits allow information from the future and from neighbouring locations to leak into training. For data with temporal and spatial dependence this produces overly optimistic error estimates \cite{roberts2017cross,cerqueira2020evaluating}. Robustness to changes over time, such as the COVID-19 period or changes in data collection, is rarely tested.
+
+\item[G5] \textbf{Lack of interpretability.} The most accurate recent models \cite{yuan2018hetero,zhou2020riskoracle,wang2021gsnet} are complex deep networks. Road safety authorities need to understand \emph{why} a location is flagged as high risk before they invest in an intervention, and these models do not provide this.
+
+\item[G6] \textbf{Uncalibrated outputs and limited reproducibility.} Risk scores are usually evaluated only as rankings. Whether a predicted risk of, for example, 5\% corresponds to an observed frequency of about 5\% is rarely checked, although this is necessary for resource planning. Studies that depend on proprietary data or unpublished code are difficult to reproduce or transfer to other cities.
+\end{description}

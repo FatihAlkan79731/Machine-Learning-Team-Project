@@ -1,0 +1,34 @@
+# Core data handling
+numpy>=1.26
+pandas>=2.1
+pyarrow>=14.0
+pyyaml>=6.0
+requests>=2.31
+
+# Geospatial
+h3>=4.0
+geopandas>=0.14
+shapely>=2.0
+osmnx>=1.9
+
+# Machine learning
+scikit-learn>=1.4
+lightgbm>=4.3
+xgboost>=2.0
+torch>=2.2
+optuna>=3.6
+
+# Explainability and visualisation
+shap>=0.45
+lime>=0.2
+matplotlib>=3.8
+seaborn>=0.13
+folium>=0.16
+
+# Calendar features
+holidays>=0.45
+
+# Notebooks and testing
+jupyter>=1.0
+pytest>=8.0
+ruff>=0.4

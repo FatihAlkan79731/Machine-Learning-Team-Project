@@ -1,0 +1,47 @@
+\begin{tikzpicture}[
+  every node/.style={font=\footnotesize},
+  sbox/.style={src, text width=2.6cm, minimum height=1.3cm},
+  pbox/.style={proc, text width=3.35cm, minimum height=1.45cm},
+  mbox/.style={model, text width=3.35cm, minimum height=1.45cm},
+  obox/.style={resbox, text width=7.2cm, minimum height=1.45cm}
+]
+% ---- Data layer -------------------------------------------------
+\node[sbox] (s1) at (1.40,0) {\textbf{Historical}\\\textbf{accidents}\\DfT STATS19};
+\node[sbox] (s2) at (4.60,0) {\textbf{Traffic}\\\textbf{conditions}\\DfT AADF, TRA0307};
+\node[sbox] (s3) at (7.80,0) {\textbf{Weather}\\Open-Meteo\\(IFS / ERA5)};
+\node[sbox] (s4) at (11.00,0) {\textbf{Road}\\\textbf{characteristics}\\OpenStreetMap};
+\node[sbox] (s5) at (14.20,0) {\textbf{Time \&}\\\textbf{calendar}\\holidays, sun position};
+\begin{scope}[on background layer]
+  \node[group, fit=(s1)(s5), inner ysep=6pt] (gA) {};
+\end{scope}
+\node[glabel, anchor=south west] at (gA.north west) {1.\ Data acquisition (open data)};
+
+% ---- Preparation layer ------------------------------------------
+\node[pbox] (b2) at (1.70,-2.75) {\textbf{2. Spatio-temporal}\\\textbf{alignment}\\H3 res.~8 $\times$ 3-h windows};
+\node[pbox] (b3) at (5.80,-2.75) {\textbf{3. Preprocessing}\\\textbf{\& cleaning}\\filter, deduplicate, impute};
+\node[pbox] (b4) at (9.90,-2.75) {\textbf{4. Exploratory}\\\textbf{data analysis}\\profiles, Moran's $I$, class ratio};
+\node[pbox] (b5) at (14.00,-2.75) {\textbf{5. Feature engineering}\\\textbf{\& selection}\\leakage audit, SHAP pruning};
+
+% ---- Modelling layer --------------------------------------------
+\node[pbox] (c6) at (1.70,-5.55) {\textbf{6. Chronological}\\\textbf{split}\\train 2018--22, val 2023,\\test 2024};
+\node[mbox] (c7) at (5.80,-5.55) {\textbf{7. Model training}\\baselines B0--B4\\and LightGBM};
+\node[mbox] (c9) at (9.90,-5.55) {\textbf{9. Calibration}\\prior correction\\+ isotonic};
+\node[mbox] (c10) at (14.00,-5.55) {\textbf{10. Evaluation}\\PR-AUC, Recall@$k$,\\Brier, CIs};
+
+% ---- Optimisation and output ------------------------------------
+\node[mbox, fill=orange!5] (d8) at (5.80,-7.95) {\textbf{8. Hyperparameter}\\\textbf{optimisation}\\Optuna TPE, validation PR-AUC};
+\node[obox] (d11) at (12.10,-7.95) {\textbf{11. Prediction \& explainability}\\calibrated risk maps \,$\cdot$\, top-$k$ priority lists\\TreeSHAP explanations};
+
+% ---- Arrows -----------------------------------------------------
+\draw[arr] (gA.south -| b2.north) -- (b2.north);
+\draw[arr] (b2) -- (b3);
+\draw[arr] (b3) -- (b4);
+\draw[arr] (b4) -- (b5);
+\draw[arr] (b5.south) -- (b5.south |- 0,-4.25) -| (c6.north);
+\draw[arr] (c6) -- (c7);
+\draw[arr] (c7) -- (c9);
+\draw[arr] (c9) -- (c10);
+\draw[arr] (c10.south) -- (c10.south |- d11.north);
+\draw[darr] ([xshift=-6mm]c7.south) -- ([xshift=-6mm]d8.north) node[midway, left, font=\scriptsize] {config};
+\draw[darr] ([xshift=6mm]d8.north) -- ([xshift=6mm]c7.south) node[midway, right, font=\scriptsize] {score};
+\end{tikzpicture}

@@ -1,0 +1,69 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------
+% Packages
+% ---------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs,tabularx,multirow,array}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc,shapes.geometric,shapes.misc}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+\hypersetup{pdftitle={Urban Accident Risk Prediction System},
+            pdfauthor={F. Alkan, D. B. Sibanda, S. Mbedzi, H. A. Gulec, F. Cokpinar}}
+
+\captionsetup{font=small,labelfont=bf}
+\captionsetup[table]{position=top,skip=4pt}
+\setlist{itemsep=2pt,topsep=4pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.15}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.75}
+
+% Shared TikZ styles used by all figures
+\tikzset{
+  box/.style={draw=black!70, rounded corners=2pt, fill=white, align=center,
+              font=\footnotesize, minimum height=0.9cm, inner sep=3pt,
+              execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}},
+  src/.style={box, fill=blue!6},
+  proc/.style={box, fill=gray!8},
+  model/.style={box, fill=orange!12},
+  resbox/.style={box, fill=green!10},
+  arr/.style={-{Stealth[length=2.2mm]}, thick, draw=black!70},
+  darr/.style={-{Stealth[length=2.2mm]}, thick, dashed, draw=black!60},
+  group/.style={draw=black!40, dashed, rounded corners=4pt, inner sep=6pt},
+  glabel/.style={font=\footnotesize\bfseries, text=black!75}
+}
+
+\title{Urban Accident Risk Prediction System}
+\author{
+  Fatih Alkan (79731) \and
+  Denzel Blessing Sibanda (79826) \and
+  Solomon Mbedzi (79788) \and
+  Helin Agze Gulec (79879) \and
+  Furkan \c{C}okp{\i}nar (79791)
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{sections/gap_analysis}
+\input{sections/proposed_solution}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

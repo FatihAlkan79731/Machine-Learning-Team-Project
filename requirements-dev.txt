@@ -1,0 +1,9 @@
+# Lightweight set used by continuous integration to run the unit tests.
+numpy>=1.26
+pandas>=2.1
+pyyaml>=6.0
+requests>=2.31
+scikit-learn>=1.4
+h3>=4.0
+pytest>=8.0
+ruff>=0.4

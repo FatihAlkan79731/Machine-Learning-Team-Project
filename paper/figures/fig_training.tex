@@ -1,0 +1,74 @@
+\begin{tikzpicture}[
+  every node/.style={font=\footnotesize},
+  yr/.style={minimum width=1.5cm, minimum height=0.62cm, inner sep=0pt, draw=white, line width=1pt},
+  tr/.style={yr, fill=blue!25},
+  va/.style={yr, fill=orange!40},
+  te/.style={yr, fill=red!35},
+  ev/.style={yr, fill=yellow!55},
+  ex/.style={yr, fill=gray!10, text=black!50},
+  rowlab/.style={anchor=east, align=right, text width=3.1cm, execute at begin node={\hyphenpenalty=10000}}
+]
+\def\xo{3.75}  % x of first year column
+\def\dx{1.6}   % column spacing
+
+% ---- Year headers -------------------------------------------------
+\foreach \k/\y in {0/2018,1/2019,2/2020,3/2021,4/2022,5/2023,6/2024}{
+  \node[font=\footnotesize\bfseries] at (\xo+\k*\dx, 0.75) {\y};
+}
+\begin{scope}[on background layer]
+  \fill[gray!12] (\xo+2*\dx-0.8, -4.55) rectangle (\xo+3*\dx+0.8, 1.10);
+\end{scope}
+\node[font=\scriptsize, text=black!60] at (\xo+2.5*\dx, 1.30) {COVID-19 period};
+\node[font=\scriptsize, text=black!60] at (\xo+6*\dx, 1.30) {new STATS19 spec};
+
+% ---- Rows -------------------------------------------------------
+% Backtest 1
+\node[rowlab] at (2.85, 0) {Backtest 1};
+\foreach \k in {0,1,2}{ \node[tr] at (\xo+\k*\dx, 0) {Train}; }
+\node[ev] at (\xo+3*\dx, 0) {Evaluate};
+
+% Backtest 2
+\node[rowlab] at (2.85,-1.0) {Backtest 2};
+\foreach \k in {0,1,2,3}{ \node[tr] at (\xo+\k*\dx,-1.0) {Train}; }
+\node[ev] at (\xo+4*\dx,-1.0) {Evaluate};
+
+% Main run
+\node[rowlab] at (2.85,-2.0) {\textbf{Main run}\\(HPO, calibration,\\final test)};
+\foreach \k in {0,1,2,3,4}{ \node[tr] at (\xo+\k*\dx,-2.0) {Train}; }
+\node[va] at (\xo+5*\dx,-2.0) {Validate};
+\node[te] at (\xo+6*\dx,-2.0) {Test};
+
+% COVID sensitivity
+\node[rowlab] at (2.85,-3.0) {Sensitivity run\\(2020--21 excluded)};
+\foreach \k in {0,1,4}{ \node[tr] at (\xo+\k*\dx,-3.0) {Train}; }
+\foreach \k in {2,3}{ \node[ex] at (\xo+\k*\dx,-3.0) {excluded}; }
+\node[va] at (\xo+5*\dx,-3.0) {Validate};
+\node[te] at (\xo+6*\dx,-3.0) {Test};
+
+% Spatial check
+\node[rowlab] at (2.85,-4.0) {Spatial block check};
+\node[draw=black!50, dashed, rounded corners=2pt, minimum height=0.62cm,
+      minimum width=11.1cm, fill=green!8, font=\scriptsize]
+      at (\xo+3*\dx,-4.0) {same years as main run; whole groups of cells (H3 res.~6 parents) held out};
+
+% ---- Workflow below the grid --------------------------------------
+\node[proc, text width=2.85cm, minimum height=1.0cm] (w1) at (1.6,-5.75) {Optuna TPE, 100 trials; early stopping};
+\node[proc, text width=2.85cm, minimum height=1.0cm] (w2) at (5.15,-5.75) {Fix features and hyperparameters};
+\node[proc, text width=2.85cm, minimum height=1.0cm] (w3) at (8.70,-5.75) {Fit isotonic map and threshold on 2023};
+\node[resbox,  text width=2.85cm, minimum height=1.0cm] (w4) at (12.25,-5.75) {Single test on 2024; block-bootstrap CIs};
+\draw[arr] (w1) -- (w2);
+\draw[arr] (w2) -- (w3);
+\draw[arr] (w3) -- (w4);
+
+% ---- Legend -----------------------------------------------------
+\node[tr, minimum width=0.5cm, minimum height=0.3cm] (lg1) at (1.0,-7.0) {};
+\node[anchor=west, font=\scriptsize] at (lg1.east) {training};
+\node[va, minimum width=0.5cm, minimum height=0.3cm] (lg2) at (3.4,-7.0) {};
+\node[anchor=west, font=\scriptsize] at (lg2.east) {validation};
+\node[ev, minimum width=0.5cm, minimum height=0.3cm] (lg3) at (5.9,-7.0) {};
+\node[anchor=west, font=\scriptsize] at (lg3.east) {backtest evaluation};
+\node[te, minimum width=0.5cm, minimum height=0.3cm] (lg4) at (9.3,-7.0) {};
+\node[anchor=west, font=\scriptsize] at (lg4.east) {held-out test};
+\node[ex, minimum width=0.5cm, minimum height=0.3cm] (lg5) at (12.0,-7.0) {};
+\node[anchor=west, font=\scriptsize] at (lg5.east) {excluded};
+\end{tikzpicture}
