@@ -46,7 +46,7 @@ code, tests, documentation and a branch-based workflow is set up for the impleme
 | 8. Mathematical formulations (numbered, variables defined, referenced) | Done | Paper §2.8, Equations 1–25 |
 | 9. Expected contributions, advantages, limitations | Done | Paper §2.9 |
 | Academic references | Done | 55 references in `paper/references.bib` |
-| Overleaf project | Source ready | `paper/` can be uploaded directly (see `paper/README.md`) |
+| Overleaf project | Done | [Overleaf project (read-only link)](https://www.overleaf.com/project/6b060c04e2ca21afb91b3d88/share#e13afaa6995383fe55032fde3958ebc94222bf5a139b3d31) |
 | Presentation of the proposed solution | Done | [`presentations/proposed-solution/`](presentations/proposed-solution/) |
 
 ---
@@ -91,7 +91,7 @@ identified:
 
 | Document | Content | Link |
 |----------|---------|------|
-| Paper (LaTeX + PDF) | Gap Analysis and Proposed Solution: 4 figures, 10 tables, 25 equations, 55 references | [`paper/`](paper/) |
+| Paper (LaTeX + PDF) | Gap Analysis and Proposed Solution: 4 figures, 10 tables, 25 equations, 55 references | [`paper/`](paper/), [Overleaf](https://www.overleaf.com/project/6b060c04e2ca21afb91b3d88/share#e13afaa6995383fe55032fde3958ebc94222bf5a139b3d31) |
 | Presentation (PDF) | 13 slides, five presenters, formulas and diagrams | [`presentations/proposed-solution/`](presentations/proposed-solution/) |
 | Project documentation | Complete project content in Markdown | [`PROJECT.md`](PROJECT.md) |
 | Project plan | Phases, tasks and compute plan | [`docs/project_plan.md`](docs/project_plan.md) |

@@ -46,6 +46,7 @@ be ranked into risk maps and priority lists.
 | Document | Description |
 |----------|-------------|
 | [Paper (PDF)](paper/Urban_Accident_Risk_Paper.pdf) | Gap Analysis and Proposed Solution, with figures, tables, equations and references |
+| [Paper on Overleaf](https://www.overleaf.com/project/6b060c04e2ca21afb91b3d88/share#e13afaa6995383fe55032fde3958ebc94222bf5a139b3d31) | The same paper in the team's Overleaf project (read-only link) |
 | [Presentation (PDF)](presentations/proposed-solution/Proposed_Solution_Presentation.pdf) | Proposed Solution presentation, five presenters, with speaking notes in its [README](presentations/proposed-solution/README.md) |
 | [PROJECT.md](PROJECT.md) | Complete project content in one Markdown document |
 | [REPORT.md](REPORT.md) | Progress report for the current stage |
