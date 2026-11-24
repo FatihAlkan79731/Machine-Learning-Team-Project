@@ -6,4 +6,4 @@ requests>=2.31
 scikit-learn>=1.4
 h3>=4.0
 pytest>=8.0
-ruff>=0.4
+ruff>=0.17

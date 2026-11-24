@@ -31,4 +31,4 @@ holidays>=0.45
 # Notebooks and testing
 jupyter>=1.0
 pytest>=8.0
-ruff>=0.4
+ruff>=0.17

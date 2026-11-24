@@ -5,7 +5,8 @@ Notebooks are for exploration and for producing figures. Reusable code belongs i
 
 ```python
 import sys
-sys.path.append("../src")   # not needed after `pip install -e .`
+
+sys.path.append("../src")  # not needed after `pip install -e .`
 from uarps.config import load_config
 ```
 
