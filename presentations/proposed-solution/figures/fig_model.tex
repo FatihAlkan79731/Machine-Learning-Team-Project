@@ -1,0 +1,57 @@
+\begin{tikzpicture}[
+  every node/.style={font=\footnotesize},
+  fbox/.style={src, text width=2.0cm, minimum height=0.72cm, inner sep=2pt},
+  tbox/.style={model, text width=1.55cm, minimum height=0.72cm},
+  cbox/.style={proc, text width=1.85cm, minimum height=1.1cm}
+]
+% ---- Feature groups ----------------------------------------------
+\node[fbox] (f1) at (1.05, 1.80) {Accident history};
+\node[fbox] (f2) at (1.05, 0.90) {Traffic exposure};
+\node[fbox] (f3) at (1.05, 0.00) {Weather};
+\node[fbox] (f4) at (1.05,-0.90) {Time \& calendar};
+\node[fbox] (f5) at (1.05,-1.80) {Road \& POI};
+
+% ---- Feature vector ----------------------------------------------
+\node[draw=black!70, rounded corners=2pt, fill=gray!8, minimum width=0.95cm,
+      fit={(3.05,2.2) (3.05,-2.2)}, inner sep=0pt] (xv) {};
+\node at (xv.center) {$\mathbf{x}_{i,t}$};
+\foreach \n in {f1,f2,f3,f4,f5}{ \draw[arr] (\n.east) -- (\n.east -| xv.west); }
+
+% ---- Boosted trees -----------------------------------------------
+\node[tbox] (t1) at (5.10, 1.35) {Tree $f_1$};
+\node[tbox] (t2) at (5.10, 0.35) {Tree $f_2$};
+\node       (td) at (5.10,-0.45) {$\vdots$};
+\node[tbox] (tm) at (5.10,-1.35) {Tree $f_M$};
+\begin{scope}[on background layer]
+  \node[group, fit=(t1)(tm), inner sep=7pt] (ens) {};
+\end{scope}
+\node[glabel, anchor=south, yshift=1pt] at (ens.north) {LightGBM ensemble};
+\foreach \n in {t1,t2,tm}{ \draw[arr] (xv.east |- \n.west) -- (\n.west); }
+
+% ---- Sum node ----------------------------------------------------
+\node[circle, draw=black!70, fill=orange!12, inner sep=1.5pt, font=\normalsize] (sum) at (7.05,0) {$\Sigma$};
+\foreach \n in {t1,t2,tm}{ \draw[arr] (\n.east) -- (sum); }
+\node[font=\scriptsize, align=center, anchor=south] at (7.5,0.06) {$F_M(\mathbf{x})$\\Eq.~12};
+
+% ---- Probability and calibration chain ---------------------------
+\node[cbox] (sig) at (8.95,0) {Sigmoid\\$p_s=\sigma(F_M)$};
+\node[cbox] (pc)  at (11.15,0) {Prior correction\\Eq.~16};
+\node[cbox] (iso) at (13.35,0) {Isotonic map $g^{*}$\\Eq.~17};
+\draw[arr] (sum) -- (sig);
+\draw[arr] (sig) -- (pc);
+\draw[arr] (pc) -- (iso);
+
+\node[resbox, text width=2.6cm, minimum height=0.9cm] (p) at (13.35,-1.95) {Calibrated risk $\hat{p}_{i,t}$};
+\draw[arr] (iso) -- (p);
+
+% ---- Outputs -----------------------------------------------------
+\node[resbox, text width=2.7cm, minimum height=0.95cm] (o1) at (6.10,-3.55) {TreeSHAP contributions $\phi_j$ (Eq.~18)};
+\node[resbox, text width=2.6cm, minimum height=0.95cm] (o2) at (10.05,-3.55) {Top-$k$ priority list of cell-windows};
+\node[resbox, text width=2.6cm, minimum height=0.95cm] (o3) at (13.35,-3.55) {Risk map per window};
+
+\draw[arr] (p.south) -- (o3.north);
+\draw[arr] (p.west) -| (o2.north);
+\draw[darr] (ens.south) -- (ens.south |- o1.north) node[midway, right, font=\scriptsize] {model};
+\draw[darr] (xv.south) |- (o1.west) node[pos=0.75, above, font=\scriptsize] {features};
+\draw[darr] (o1.east) -- (o2.west) node[midway, above, font=\scriptsize] {explains};
+\end{tikzpicture}
