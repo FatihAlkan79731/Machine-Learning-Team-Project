@@ -9,7 +9,7 @@ that at least one police-reported injury collision will occur, using only inform
 available before the window starts. The output is a calibrated, explainable risk score that can
 be ranked into risk maps and priority lists.
 
-> **Status:** Proposed solution defined (see [`paper/`](paper/)). Implementation in progress.
+> **Status:** Proposed solution defined and presented (see [Documents](#documents)). Implementation in progress.
 > No experimental results have been produced yet.
 
 ---
@@ -41,8 +41,16 @@ be ranked into risk maps and priority lists.
 | Evaluation | PR-AUC (primary), Recall@k, ROC-AUC, F1, Brier score, block-bootstrap confidence intervals |
 | Explainability | TreeSHAP global and local explanations, risk maps |
 
-The full methodology, research gaps and equations are documented in the paper source in
-[`paper/`](paper/).
+## Documents
+
+| Document | Description |
+|----------|-------------|
+| [Paper (PDF)](paper/Urban_Accident_Risk_Paper.pdf) | Gap Analysis and Proposed Solution, with figures, tables, equations and references |
+| [Presentation (PDF)](presentations/proposed-solution/Proposed_Solution_Presentation.pdf) | Proposed Solution presentation, five presenters, with speaking notes in its [README](presentations/proposed-solution/README.md) |
+| [PROJECT.md](PROJECT.md) | Complete project content in one Markdown document |
+| [REPORT.md](REPORT.md) | Progress report for the current stage |
+| [docs/project_plan.md](docs/project_plan.md) | Phases, tasks and compute plan |
+| [docs/data_sources.md](docs/data_sources.md) | Data downloads, licences and notes |
 
 ---
 
@@ -74,7 +82,8 @@ All data are open and free. Raw data are **not** committed to this repository; s
 ├── docs/                 # Project plan, data sources, meeting notes
 ├── models/               # Trained model files (ignored by git)
 ├── notebooks/            # Jupyter notebooks for EDA and experiments
-├── paper/                # LaTeX source of the project paper (Overleaf)
+├── paper/                # LaTeX source and PDF of the project paper (Overleaf)
+├── presentations/        # Presentation slides (PDF and LaTeX source)
 ├── reports/figures/      # Figures exported for the paper and presentations
 ├── scripts/              # Command-line entry points (download, build, train, evaluate)
 ├── src/uarps/            # Python package: Urban Accident Risk Prediction System

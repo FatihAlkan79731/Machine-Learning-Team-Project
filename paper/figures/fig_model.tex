@@ -31,7 +31,7 @@
 % ---- Sum node ----------------------------------------------------
 \node[circle, draw=black!70, fill=orange!12, inner sep=1.5pt, font=\normalsize] (sum) at (7.05,0) {$\Sigma$};
 \foreach \n in {t1,t2,tm}{ \draw[arr] (\n.east) -- (sum); }
-\node[font=\scriptsize, align=center, anchor=north] at (7.75,-0.12) {$F_M(\mathbf{x})$\\Eq.~\ref{eq:gbdt}};
+\node[font=\scriptsize, align=center, anchor=south] at (7.5,0.06) {$F_M(\mathbf{x})$\\Eq.~\ref{eq:gbdt}};
 
 % ---- Probability and calibration chain ---------------------------
 \node[cbox] (sig) at (8.95,0) {Sigmoid\\$p_s=\sigma(F_M)$};
