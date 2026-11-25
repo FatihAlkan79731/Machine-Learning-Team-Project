@@ -1,10 +1,11 @@
 # Paper — Urban Accident Risk Prediction System
 
-LaTeX source of the project paper.
+LaTeX source of the project paper, written in the **ACM conference proceedings format**
+(`\documentclass[sigconf,nonacm]{acmart}`, two columns, ACM reference style).
 
 | File | Content |
 |------|---------|
-| `main.tex` | Document setup, packages, title and team, shared TikZ styles |
+| `main.tex` | ACM `acmart` setup, title, authors and affiliation, abstract, CCS concepts, keywords, shared TikZ styles |
 | `sections/gap_analysis.tex` | Literature summary and research gaps G1–G6 |
 | `sections/proposed_solution.tex` | Proposed solution (all nine required subsections) |
 | `figures/*.tex` | TikZ diagrams (architecture, preprocessing, model framework, training workflow) |
@@ -23,7 +24,8 @@ latexmk -pdf main.tex
 
 **Option 1 — upload:** use [`Urban_Accident_Risk_Overleaf.zip`](Urban_Accident_Risk_Overleaf.zip) (or compress
 the contents of this folder yourself), then in Overleaf choose *New Project → Upload Project*. Overleaf compiles it with pdfLaTeX and BibTeX
-automatically.
+automatically. The `acmart` class and the `ACM-Reference-Format` style are part of TeX Live,
+so Overleaf needs no extra files.
 
 **Option 2 — GitHub sync (Overleaf premium):** *Menu → GitHub* links an Overleaf project to a
 repository. Because this paper lives in a subfolder, upload (option 1) is the simpler route.

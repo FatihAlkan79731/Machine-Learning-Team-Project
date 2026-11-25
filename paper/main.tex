@@ -1,36 +1,23 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[sigconf,nonacm]{acmart}
+
+% "nonacm" keeps the ACM sigconf layout but removes the copyright block,
+% ACM reference format and conference information of published papers.
 
 % ---------------------------------------------------------------
-% Packages
+% Packages (acmart already loads amsmath, booktabs, graphicx,
+% xcolor, hyperref and natbib)
 % ---------------------------------------------------------------
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage{lmodern}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{amsmath,amssymb,bm}
-\usepackage{booktabs,tabularx,multirow,array}
-\usepackage{graphicx}
-\usepackage[table]{xcolor}
-\usepackage{caption}
+\usepackage{bm}
+\usepackage{tabularx,multirow,array}
 \usepackage{enumitem}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc,shapes.geometric,shapes.misc}
-\usepackage[numbers,sort&compress]{natbib}
-\usepackage[hidelinks]{hyperref}
 \usepackage[capitalise,noabbrev]{cleveref}
-\hypersetup{pdftitle={Urban Accident Risk Prediction System},
-            pdfauthor={F. Alkan, D. B. Sibanda, S. Mbedzi, H. A. Gulec, F. Cokpinar}}
 
-\captionsetup{font=small,labelfont=bf}
-\captionsetup[table]{position=top,skip=4pt}
-\setlist{itemsep=2pt,topsep=4pt}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
-\renewcommand{\arraystretch}{1.15}
-\renewcommand{\topfraction}{0.9}
-\renewcommand{\bottomfraction}{0.8}
-\renewcommand{\textfraction}{0.07}
-\renewcommand{\floatpagefraction}{0.75}
+\setlist{itemsep=2pt,topsep=4pt}
+\setlength{\emergencystretch}{1.5em}
 
 % Shared TikZ styles used by all figures
 \tikzset{
@@ -47,23 +34,98 @@
   glabel/.style={font=\footnotesize\bfseries, text=black!75}
 }
 
-\title{Urban Accident Risk Prediction System}
-\author{
-  Fatih Alkan (79731) \and
-  Denzel Blessing Sibanda (79826) \and
-  Solomon Mbedzi (79788) \and
-  Helin Agze Gulec (79879) \and
-  Furkan \c{C}okp{\i}nar (79791)
-}
-\date{}
-
 \begin{document}
+
+\title{Urban Accident Risk Prediction System}
+\subtitle{Gap Analysis and Proposed Solution}
+
+\author{Fatih Alkan}
+\affiliation{%
+  \department{Student ID 79731}
+  \institution{Vistula University}
+  \city{Warsaw}
+  \country{Poland}}
+
+\author{Denzel Blessing Sibanda}
+\affiliation{%
+  \department{Student ID 79826}
+  \institution{Vistula University}
+  \city{Warsaw}
+  \country{Poland}}
+
+\author{Solomon Mbedzi}
+\affiliation{%
+  \department{Student ID 79788}
+  \institution{Vistula University}
+  \city{Warsaw}
+  \country{Poland}}
+
+\author{Helin Agze Gulec}
+\affiliation{%
+  \department{Student ID 79879}
+  \institution{Vistula University}
+  \city{Warsaw}
+  \country{Poland}}
+
+\author{Furkan \c{C}okp{\i}nar}
+\affiliation{%
+  \department{Student ID 79791}
+  \institution{Vistula University}
+  \city{Warsaw}
+  \country{Poland}}
+
+\renewcommand{\shortauthors}{Alkan et al.}
+
+\begin{abstract}
+Road traffic collisions in large cities remain frequent, while the resources available to
+prevent them are limited. This paper presents the gap analysis and the proposed solution of an
+Urban Accident Risk Prediction System for Greater London. A review of statistical crash-frequency
+models and recent deep spatio-temporal networks identifies six research gaps: information leakage
+in the problem framing, limited integration of heterogeneous factors, extreme class imbalance
+with misleading metrics, optimistic validation, lack of interpretability, and uncalibrated,
+hard-to-reproduce outputs. To address them, we propose to estimate the probability of at least
+one police-reported injury collision for every H3 hexagonal cell and three-hour window, using
+only information available in advance. The system fuses five open data groups (historical
+accidents, traffic exposure, weather, time and road characteristics) and uses a LightGBM model
+with class weighting, negative subsampling with prior correction, isotonic calibration and
+TreeSHAP explanations. Models are validated chronologically on a held-out future year and
+compared with naive, linear, ensemble and neural baselines using PR-AUC, Recall@$k$ and the Brier
+score. No experimental results are reported at this stage.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10010147.10010257</concept_id>
+       <concept_desc>Computing methodologies~Machine learning</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10010147.10010257.10010258.10010259</concept_id>
+       <concept_desc>Computing methodologies~Supervised learning</concept_desc>
+       <concept_significance>300</concept_significance>
+   </concept>
+   <concept>
+       <concept_id>10010405.10010481.10010485</concept_id>
+       <concept_desc>Applied computing~Transportation</concept_desc>
+       <concept_significance>500</concept_significance>
+   </concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Computing methodologies~Machine learning}
+\ccsdesc[300]{Computing methodologies~Supervised learning}
+\ccsdesc[500]{Applied computing~Transportation}
+
+\keywords{traffic accident prediction, road safety, spatio-temporal data, gradient boosting,
+class imbalance, probability calibration, explainable machine learning}
+
 \maketitle
 
 \input{sections/gap_analysis}
 \input{sections/proposed_solution}
 
-\bibliographystyle{unsrtnat}
+\bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
 
 \end{document}
