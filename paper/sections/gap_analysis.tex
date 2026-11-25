@@ -3,7 +3,7 @@
 
 Research on road traffic accident prediction follows two main lines. The first is statistical crash-frequency modelling, in which Poisson, negative binomial and related count models relate the number of crashes on a road segment or in an area to traffic exposure and road design over a period of months or years \cite{lord2010statistical,mannering2014analytic}. These models are interpretable and well understood. However, they assume a fixed functional form, are usually estimated on annually aggregated data, and are not designed to produce short-term, location-specific risk estimates. The second line uses machine learning and deep learning to predict accident occurrence or accident risk over a spatial grid at hourly or finer resolution. \Cref{tab:literature} summarises the studies that are closest to the system proposed in this project.
 
-\begin{table}[htbp]
+\begin{table*}[t]
 \centering
 \caption{Summary of representative studies on spatio-temporal accident risk prediction.}
 \label{tab:literature}
@@ -21,7 +21,7 @@ Zhou et al.\ \cite{zhou2020riskoracle} & New York City and Suzhou; accidents, ta
 Wang et al.\ \cite{wang2021gsnet} & New York City and Chicago; multi-source data & GSNet with weighted loss for zero inflation & Black-box architecture; does not provide calibrated probabilities or feature-level explanations for decision makers. \\
 \bottomrule
 \end{tabularx}
-\end{table}
+\end{table*}
 
 Based on this review, six research gaps are identified. They are referred to as G1--G6 throughout the rest of the paper.
 
