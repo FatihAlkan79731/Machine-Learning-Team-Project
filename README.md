@@ -2,8 +2,8 @@
 
 **📄 Overleaf project:** [https://www.overleaf.com/project/6b060c04e2ca21afb91b3d88/share#e13afaa6995383fe55032fde3958ebc94222bf5a139b3d31](https://www.overleaf.com/project/6b060c04e2ca21afb91b3d88/share#e13afaa6995383fe55032fde3958ebc94222bf5a139b3d31)
 
-*Read-only link to our paper on Overleaf. It contains the Gap Analysis (Section 1) and the
-Proposed Solution (Section 2). The same paper is also available here as a
+*Read-only link to our paper on Overleaf, in the ACM conference proceedings format. It contains
+the Gap Analysis (Section 1) and the Proposed Solution (Section 2). The same paper is also available here as a
 [PDF](paper/Urban_Accident_Risk_Paper.pdf).*
 
 A machine learning system that predicts the risk of road traffic accidents in urban areas using

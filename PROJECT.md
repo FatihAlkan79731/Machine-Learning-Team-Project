@@ -12,7 +12,7 @@
 
 This document collects the complete content of the project in one place: the problem, the Gap
 Analysis, the Proposed Solution, the methodology, the equations, the evaluation plan and the
-repository. The formal version with full citations is the LaTeX paper in [`paper/`](paper/) (also on
+repository. The formal version with full citations is the LaTeX paper (ACM conference format) in [`paper/`](paper/) (also on
 [Overleaf](https://www.overleaf.com/project/6b060c04e2ca21afb91b3d88/share#e13afaa6995383fe55032fde3958ebc94222bf5a139b3d31));
 the presentation is in [`presentations/proposed-solution/`](presentations/proposed-solution/).
 
